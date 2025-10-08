@@ -1,0 +1,21 @@
+{
+    "debugger": {
+        "enabled": true,
+        "debug_for_index": []
+    },
+    "simulation": {
+        "simulation_time": 2,
+        "time_step": 0.001,
+        "block": false,
+        "report": false
+    },
+
+    "input_signal": {
+        "frequency": 1,
+        "amplitude": 40,
+        "baseline": 80
+    },
+    "output": {
+        "save_results": false
+    }
+}

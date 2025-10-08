@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 
 # Replace 'your_file.pkl' with the path to your pickle file
-with open('.venv\Data\simulation_output.pkl', 'rb') as f:
+with open('Output\simulation_output_006.pkl', 'rb') as f:
     data = pickle.load(f)
 
 print(data)
@@ -12,12 +12,12 @@ import matplotlib.pyplot as plt
 # Plot the output (data.x) and input (data.y0) on separate subplots for clarity
 fig, axs = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-indices = np.where((data.t >= 8) & (data.t < 10))[0]
+indices = np.where((data.t >= 0) & (data.t < 10))[0]
 print(f'Indices where 2 < t < 4: {indices}')
 print(f'Corresponding t values: {data.t[indices]}')
 # Output plot
 # axs[0].plot(data.t[indices], data.x[indices, 2], label='Output: ' + data.xnames[2], color='tab:blue')
-axs[0].plot(data.t, data.x[:, 2], label='Output: ' + data.xnames[2], color='tab:blue')
+axs[0].plot(data.t, data.x[:, 20], label='Output: ' + data.xnames[20], color='tab:blue')
 axs[0].set_ylabel('Output Value')
 axs[0].legend()
 axs[0].grid(True)
