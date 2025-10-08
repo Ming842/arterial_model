@@ -39,6 +39,7 @@ def main():
     
     # Save the output if specified in settings
     if settings['output']['save_results']: # only save if specified in settings
+        print(out)
         saver(out)
     else :
         print("Output saving is disabled in settings.")
