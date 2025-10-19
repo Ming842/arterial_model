@@ -1,5 +1,17 @@
 """
 This script loads the most recent simulation output from the 'Output' directory and plots the results.
+It extracts data based on the debugger settings specified in 'settings.json'.
+
+db is a dictionary structured as:
+{
+    'SS<segment_index>': {
+        '<port_name>': [data_array],
+        ...
+    },
+    ...
+}
+
+data.t contains the time vector.
 """
 
 import glob
@@ -50,9 +62,6 @@ for i, yname in enumerate(out_numbers):
             db[f'SS{yname}'] = {}
             db[f'SS{yname}'][f'{port_list[i % len(port_list)]}'] = getattr(data, attr)
 
-print(db)
-
-
 
 # # Optionally set time window (uncomment and set t_min, t_max as needed)
 # t_min = 5      # minimum time (inclusive)
@@ -66,6 +75,7 @@ else:
     mask = slice(None)
     t_plot = data.t
 
+## plotting for all port_data (names of the debugger ports from settings)
 for ss_key, port_data in db.items():
     num_ports = len(port_data)
     fig, axes = plt.subplots(num_ports, 1, figsize=(10, 4 * num_ports), sharex=True)
@@ -81,3 +91,4 @@ for ss_key, port_data in db.items():
 
 
 plt.show()
+

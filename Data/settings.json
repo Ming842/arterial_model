@@ -5,8 +5,8 @@
         "debugger_port_list": ["Pi", "Fo", "-Rs*Fi", "-Fi", "-Po", "int_fi", "int_po"]
     },
     "simulation": {
-        "simulation_time": 30,
-        "time_step": 0.1,
+        "simulation_time": 50,
+        "time_step": 0.008,
         "block": false,
         "report": true
     },

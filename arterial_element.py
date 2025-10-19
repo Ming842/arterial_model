@@ -121,22 +121,14 @@ class ArterialElement():
             'int_fi': int_fi,
             'int_po': int_po
             }
+            if self.index == 1: 
+                self.debug_port_map['-Fi'] = clip
             for i, port_name in enumerate(self.debug_port_list):
                 if port_name in self.debug_port_map:
                     self.arterial_element.connect(self.debug_port_map[port_name], outp[output_ports + i])
 
                 else: # Handle unknown port names
                     raise ValueError(f"Unknown debug port name: {port_name}, available options: {list(self.debug_port_map.keys())}")
-
-        # if index == 1 or index == 2:
-            # scope_pi = self.arterial_element.SCOPE(name = f'Scope Pi {index}')
-            # scope_Fo = self.arterial_element.SCOPE(name = f'Scope Fo {index}')
-            # scope_rs = self.arterial_element.SCOPE(name = f'Scope RS, i.e. -Rs*Fi {index}')
-            # scope_invl = self.arterial_element.SCOPE(name = f'Scope invL, i.e. -Fi {index}')
-            # scope_invc = self.arterial_element.SCOPE(name = f'Scope invC, i.e. -Po {index}')
-            # scope_intfi = self.arterial_element.SCOPE(name = f'Scope int (P_i - P_o - R_s*F_i) {index}')
-            # scope_intpo = self.arterial_element.SCOPE(name = f'Scope int (F_i - F_o - P_o/R_p) {index}')
-            
 
 def arterial_elements_from_params(sim: bdsim.BDSim, model_params, settings):
     """
@@ -240,10 +232,12 @@ def connect_segments(model, arterial_elements, model_params, settings):
                     print(f"Segment {index} has one connection to segment {a}, now connecting.")
 
                     # Connecting Pi of current segment to Po of connected segment
-                    model.connect(arterial_elements['SS'][str(index)][0], arterial_elements['SS'][str(a)][0])
+                    arterial_elements['SS'][str(a)][0] = -1 * arterial_elements['SS'][str(index)][0]
+                    # model.connect(arterial_elements['SS'][str(index)][0], arterial_elements['SS'][str(a)][0])
                     
                     # Connecting Fi of connected segment to Fo of current segment
-                    model.connect(arterial_elements['SS'][str(a)][1], arterial_elements['SS'][str(index)][1])
+                    arterial_elements['SS'][str(index)][1] = -1 * arterial_elements['SS'][str(a)][1]
+                    # model.connect(arterial_elements['SS'][str(a)][1], arterial_elements['SS'][str(index)][1])
 
                 else: ## MULTIPLE CONNECTIONS --------------------------------------------------------------------
                     print(f"Segment {index} has multiple connections {connections}, now connecting {[a, *rest]}.")
@@ -252,10 +246,12 @@ def connect_segments(model, arterial_elements, model_params, settings):
                     for i, conn in enumerate([a, *rest]):
 
                         # Connecting Pi of current segment to Po of connected segment
-                        model.connect(arterial_elements['SS'][str(index)][0], arterial_elements['SS'][str(conn)][0])
+                        arterial_elements['SS'][str(conn)][0] = -1 * arterial_elements['SS'][str(index)][0]
+                        # model.connect(arterial_elements['SS'][str(index)][0], arterial_elements['SS'][str(conn)][0])
 
                         # Connect Fi of connected segment to sum block
-                        model.connect(arterial_elements['SS'][str(conn)][1], sumb[i]) 
+                        sumb[i] = -1 * arterial_elements['SS'][str(conn)][1]
+                        # model.connect(arterial_elements['SS'][str(conn)][1], sumb[i]) 
                         print(f"Connected segment {index} to {conn} with sum block of {n} inputs.")
 
                     # Connect Fi of combined segments back into Fo of current segment
