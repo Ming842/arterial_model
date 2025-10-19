@@ -43,7 +43,7 @@ class ArterialElement():
         # Logic for extra output ports if debugger is enabled in settings for this index
         debugger_enabled = self.settings['debugger']['enabled']
         debug_this_index = self.index in self.settings['debugger']['debug_for_index']
-        output_names = ['-Po', 'Fi'] if self.index != 1 else ['-Po']  # Naming inputs, just Po for first segment
+        output_names = ['Po', 'Fi'] if self.index != 1 else ['Po']  # Naming inputs, just Po for first segment
 
         if debugger_enabled and debug_this_index:
             print(f"Debugging enabled for arterial element {self.index}, adding extra ports to output.")
@@ -89,13 +89,14 @@ class ArterialElement():
 
         self.arterial_element.connect(sum_f, int_fi)       # Pi + (- Po) + (- Rs*Fi) -> ∫()
 
-        self.arterial_element.connect(int_fi, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
 
         if self.index == 1: # clipping Fi output for 1st segment to mimic aortic valve behavior
-            clip = self.arterial_element.CLIP(min= float('-inf'), max=0, name=f'Clip -Rs*Fi {self.index}')
-            self.arterial_element.connect(k_invl, clip)
-            self.arterial_element.connect(clip, sum_p[0], k_rs)  # -Fi -> -Rs*Fi & sum_p[0] for next calculations
+            clip = self.arterial_element.CLIP(max= 0, name=f'Clip -Rs*Fi {self.index}')
+            self.arterial_element.connect(int_fi, clip)
+            self.arterial_element.connect(clip, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
+            self.arterial_element.connect(k_invl, sum_p[0], k_rs)  # -Fi -> -Rs*Fi & sum_p[0] for next calculations
         else: # normal behavior for all other segments
+            self.arterial_element.connect(int_fi, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
             self.arterial_element.connect(k_invl, k_rs, outp[1])
             self.arterial_element.connect(k_invl, sum_p[0])    # Fi
         
@@ -118,8 +119,8 @@ class ArterialElement():
             'int_fi': int_fi,
             'int_po': int_po
             }
-            if self.index == 1:
-                self.debug_port_map['-Fi'] = clip
+            # if self.index == 1:
+            #     self.debug_port_map['-Fi'] = k_invl
             for i, port_name in enumerate(self.debug_port_list):
                 if port_name in self.debug_port_map:
                     self.arterial_element.connect(self.debug_port_map[port_name], outp[output_ports + i])

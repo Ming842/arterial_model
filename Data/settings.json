@@ -5,14 +5,14 @@
         "debugger_port_list": ["Pi", "Fo", "-Rs*Fi", "-Fi", "-Po", "int_fi", "int_po"]
     },
     "simulation": {
-        "simulation_time": 50,
+        "simulation_time": 10,
         "time_step": 0.008,
         "block": false,
         "report": true
     },
 
     "input_signal": {
-        "frequency": 1,
+        "frequency": 2.5,
         "amplitude": 40,
         "baseline": 80
     },

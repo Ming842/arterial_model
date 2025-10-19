@@ -1,48 +1,36 @@
 """
-Main script to set up and run the arterial network model simulation.
+This script loads the most recent simulation output from the 'Output' directory and plots the results.
+It extracts data based on the debugger settings specified in 'settings.json'.
 
-Connects arterial elements based on configuration from a JSON file.
+db is a dictionary structured as:
+{
+    't': [time_array],
+
+    'SS<segment_index>': {
+        '<port_name>': [data_array],
+        ...
+    },
+    ...
+}
 """
 
-import bdsim
+import glob
+import pickle
+import re
+import os
 
-from arterial_element import arterial_elements_from_params, to_subsystem, connect_segments
-from filer import loader, saver
+import numpy as np
+import matplotlib.pyplot as plt
 
+from filer import loader, load_latest_simulation_output, build_debug_db
 
+#load settings file
+settings, _ = loader()
 
-def main():
-    settings, model_params = loader()
-    # Initialize simulation and arterial elements dictionary
-    sim = bdsim.BDSim()
-    
-    arterial_elements = arterial_elements_from_params(sim, model_params, settings)
+# Load the most recent simulation output
+data, last_file = load_latest_simulation_output(pattern='simulation_output_*.pkl')
+print(f'Loaded data from {last_file}')
 
-    ## Initialize main model and add subsystems to dictionary
-    
-    model = sim.blockdiagram(name='Arterial Network Model')
+# Build and save the debugger DB using the loaded data/settings
+db, out_path = build_debug_db(data, settings, last_file, save=False)
 
-    # Convert all arterial elements to subsystems under main model and store in 'SS' dictionary
-    arterial_elements = to_subsystem(model, arterial_elements)
-
-    # Connect segments based on model_params connections
-    connect_segments(model, arterial_elements, model_params, settings)
-
-    if settings['simulation']['report']:
-        model.report()    # list all blocks and wires
-
-    model.compile()
-
-    out = sim.run(model, dt = settings['simulation']['time_step'],
-                  T = settings['simulation']['simulation_time'],
-                  block = settings['simulation']['block'])  # simulate for 30s
-    
-    # Save the output if specified in settings
-    if settings['output']['save_results']: # only save if specified in settings
-        print(out)
-        saver(out)
-    else :
-        print("Output saving is disabled in settings.")
-
-if __name__ == "__main__":
-    main()

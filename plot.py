@@ -13,81 +13,76 @@ db is a dictionary structured as:
     ...
 }
 """
-
-import glob
+import os
 import pickle
 import re
+
+from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from filer import loader
+from filer import loader, load_latest_simulation_output, build_debug_db
 
-# Load the most recent simulation output
-files = glob.glob('Output/simulation_output_*.pkl')
-if not files:
-    raise FileNotFoundError("No simulation_output_XXX.pkl files found in Output directory.")
-
-last_file = max(files, key=lambda f: int(re.search(r'(\d+)', f).group(1)))
-
-with open(last_file, 'rb') as f:
-    data = pickle.load(f)
-
-print(f'Loaded data from {last_file}')
-
+#load settings file
 settings, _ = loader()
 
-index = settings['debugger']['debug_for_index']
-port_list = settings['debugger']['debugger_port_list']
+# Load the most recent simulation output
+data, last_file = load_latest_simulation_output(pattern='simulation_output_*.pkl')
+print(f'Loaded data from {last_file}')
 
-db = {}  # dictionary to hold data for plotting
+# Build and save the debugger DB using the loaded data/settings
+db = build_debug_db(data, settings, last_file, save=False)
 
-# Extract numbers after 'out_' and up to the '[' for each yname
-out_numbers = []
-pattern = re.compile(r'out_(\d+)\[')
-for yname in data.ynames:
-    match = pattern.search(yname)
-    if match:
-        out_numbers.append(int(match.group(1)))
+def plot_all_segments(db, fi_substring, figsize=(10, 6), cmap_name='tab20'):
+    t = np.asarray(db.get('t', []))
+    # find SS keys and sort by numeric index if present
+    ss_keys = [k for k in db.keys() if re.match(r'^SS\d+$', k)]
+    def _idx(k):
+        m = re.match(r'^SS(\d+)$', k)
+        return int(m.group(1)) if m else float('inf')
+    ss_keys.sort(key=_idx)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    cmap = plt.get_cmap(cmap_name)
+
+    any_plotted = False
+    for i, ss in enumerate(ss_keys):
+        seg = db.get(ss, {})
+        fi_keys = [k for k in seg.keys() if k.lower() == fi_substring.lower()]
+        if not fi_keys:
+            continue
+
+        for j, key in enumerate(fi_keys):
+            y = np.asarray(seg[key])
+            label = f"{ss}:{key}"
+            color = cmap((i * len(fi_keys) + j) % cmap.N)
+            # align lengths of t and y if necessary
+            if t.size and y.size and t.size != y.size:
+                n = min(t.size, y.size)
+                ax.plot(t[:n], y[:n], label=label, color=color)
+            else:
+                ax.plot(t, y, label=label, color=color)
+            any_plotted = True
+
+    ax.set_xlabel('time')
+    ax.set_ylabel('Fi')
+    ax.set_title('Fi for all SS segments')
+    if any_plotted:
+        ax.legend(loc='best', fontsize='small')
     else:
-        out_numbers.append(None)
+        ax.text(0.5, 0.5, 'No matching Fi data found', ha='center', va='center', transform=ax.transAxes)
+    ax.grid(True)
 
-for i, yname in enumerate(out_numbers):
-    attr = f'y{i}'
+    return fig, ax
 
-    if hasattr(data, attr):
-        try:
-            db[f'SS{yname}'][f'{port_list[i % len(port_list)]}'] = getattr(data, attr)
-        except (KeyError, TypeError):
-            db[f'SS{yname}'] = {}
-            db[f'SS{yname}'][f'{port_list[i % len(port_list)]}'] = getattr(data, attr)
+# call the function
+# debugger_port_list = ["Pi", "Fo", "-Rs*Fi", "-Fi", "-Po", "int_fi", "int_po"]
+debugger_port_list = ["-Fi","int_fi"]
 
-
-# # Optionally set time window (uncomment and set t_min, t_max as needed)
-# t_min = 5      # minimum time (inclusive)
-# t_max = 6     # maximum time (exclusive)
-# mask = (data.t > t_min) & (data.t < t_max)
-
-if 't_min' in locals() and 't_max' in locals():
-    mask = (data.t > t_min) & (data.t < t_max)
-    t_plot = data.t[mask]
-else:
-    mask = slice(None)
-    t_plot = data.t
-
-## plotting for all port_data (names of the debugger ports from settings)
-for ss_key, port_data in db.items():
-    num_ports = len(port_data)
-    fig, axes = plt.subplots(num_ports, 1, figsize=(10, 4 * num_ports), sharex=True)
-    if num_ports == 1:
-        axes = [axes]
-    for ax, (port, values) in zip(axes, port_data.items()):
-        ax.plot(t_plot, np.array(values)[mask], label=port)
-        ax.set_title(f'{ss_key} - {port}')
-        ax.set_ylabel('Value')
-        ax.legend()
-    axes[-1].set_xlabel('Time (s)')
-    fig.tight_layout()
+for port in debugger_port_list:
+    fig, ax = plot_all_segments(db, port)
+    ax.set_title(f"{port} for all SS segments")
 
 
 plt.show()
