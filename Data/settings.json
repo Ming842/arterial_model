@@ -16,6 +16,10 @@
         "amplitude": 40,
         "baseline": 80
     },
+    "initial_conditions": {
+        "int_fi": 0.0,
+        "int_po": 0.0
+    },
     "output": {
         "save_results": true
     }

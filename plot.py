@@ -4,14 +4,14 @@ It extracts data based on the debugger settings specified in 'settings.json'.
 
 db is a dictionary structured as:
 {
+    't': [time_array],
+
     'SS<segment_index>': {
         '<port_name>': [data_array],
         ...
     },
     ...
 }
-
-data.t contains the time vector.
 """
 
 import glob
@@ -56,9 +56,9 @@ for i, yname in enumerate(out_numbers):
     attr = f'y{i}'
 
     if hasattr(data, attr):
-        try: 
+        try:
             db[f'SS{yname}'][f'{port_list[i % len(port_list)]}'] = getattr(data, attr)
-        except:
+        except (KeyError, TypeError):
             db[f'SS{yname}'] = {}
             db[f'SS{yname}'][f'{port_list[i % len(port_list)]}'] = getattr(data, attr)
 
@@ -91,4 +91,3 @@ for ss_key, port_data in db.items():
 
 
 plt.show()
-

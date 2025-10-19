@@ -8,18 +8,16 @@ Outputs: Po, Fi
 """
 
 import bdsim
-
-
 class ArterialElement():
     """
     Simple arterial element model
     """
-    def __init__(self, sim: bdsim.BDSim, rs, l, c, index, settings, rp=None, ped=80):
+    def __init__(self, sim: bdsim.BDSim, rs, l, c, index, settings, rp=None):
         """
         Initialize the arterial element block
         """
         self.settings = settings
-        
+
         self.debug_port_list = self.settings['debugger']['debugger_port_list'] if self.settings['debugger']['enabled'] else []
         self.sim = sim
         self.arterial_element = bdsim.BlockDiagram()
@@ -28,10 +26,10 @@ class ArterialElement():
         self.c = c
         self.index = index
         self.rp = rp
-        self.ped = ped
-
+        self.int_fi = settings['initial_conditions']['int_fi']
+        self.int_po = settings['initial_conditions']['int_po']
         self.make_art_element()
-    
+
     def make_art_element(self):
         """
         Simple arterial element model
@@ -45,7 +43,7 @@ class ArterialElement():
         # Logic for extra output ports if debugger is enabled in settings for this index
         debugger_enabled = self.settings['debugger']['enabled']
         debug_this_index = self.index in self.settings['debugger']['debug_for_index']
-        output_names = ['Po', 'Fi'] if self.index != 1 else ['Po']  # Naming inputs, no change for first segment
+        output_names = ['-Po', 'Fi'] if self.index != 1 else ['-Po']  # Naming inputs, just Po for first segment
 
         if debugger_enabled and debug_this_index:
             print(f"Debugging enabled for arterial element {self.index}, adding extra ports to output.")
@@ -55,11 +53,11 @@ class ArterialElement():
             debugger_ports = 0
 
         output_ports = 2 if self.index != 1 else 1  # Fi is clipped for the 1st segment to mimic aortic valve behavior
-        
+
         # Ports: inputs [Pi, Fo], outputs [Po, Fi]
         inp  = self.arterial_element.INPORT(2, name=f'in_{self.index}')   # inp[0]=Pi, inp[1]=Fo
         outp = self.arterial_element.OUTPORT(output_ports+debugger_ports, name=f'out_{self.index}', onames= output_names)  # outp[0]=Po , outp[1]=Fi, outp[2...]=debugger ports
- 
+
         # Gains
         k_invl = self.arterial_element.GAIN(-1.0 / self.l, name= "k_invl")     # -1/L
         k_invc = self.arterial_element.GAIN(-1.0 / self.c, name= "k_invc")     # -1/C
@@ -69,14 +67,13 @@ class ArterialElement():
             k_1rp  = self.arterial_element.GAIN(1.0 / self.rp, name= "k_1rp")    # 1/Rp
 
         # Integrators
-        int_fi = self.arterial_element.INTEGRATOR(x0=0.0,  name='Fi')   #∫ (Pi - Po - Rs*Fi) dt
-        int_po = self.arterial_element.INTEGRATOR(x0=self.ped, name='Po')    #∫ (Fi - Fo - Po/Rp) dt
+        int_fi = self.arterial_element.INTEGRATOR(x0=self.int_fi,  name='Fi')   #∫ (Pi - Po - Rs*Fi) dt
+        int_po = self.arterial_element.INTEGRATOR(x0=self.int_po, name='Po')    #∫ (Fi - Fo - Po/Rp) dt
 
         # Sums
         sum_f = self.arterial_element.SUM('+++', name='F')   # Pi + (- Po) + (- Rs*Fi)
 
-        
-        if self.rp is not None: # room for peripheral resistance added to sum only if rp is provided 
+        if self.rp is not None: # room for peripheral resistance added to sum only if rp is provided
             sum_p = self.arterial_element.SUM('--+', name='P')   # Fi + (- Fo) + (- Po/Rp)
         else:
             sum_p = self.arterial_element.SUM('--', name='P')   # - Fi - (- Fo) + (- Po/Rp)
@@ -121,7 +118,7 @@ class ArterialElement():
             'int_fi': int_fi,
             'int_po': int_po
             }
-            if self.index == 1: 
+            if self.index == 1:
                 self.debug_port_map['-Fi'] = clip
             for i, port_name in enumerate(self.debug_port_list):
                 if port_name in self.debug_port_map:
@@ -208,16 +205,13 @@ def connect_segments(model, arterial_elements, model_params, settings):
         if debugger_enabled and debug_for_index:
             print(f"Debugging enabled for segment {index}, connecting ports to dataports.")
             output_ports = 2 if index != 1 else 1  # Fi is clipped for the 1st segment to mimic aortic valve behavior
-            print(len(settings['debugger']['debugger_port_list']))
-            
-            debugger_ports = len(settings['debugger']['debugger_port_list']) if debugger_enabled else 0
 
-        
+            debugger_ports = len(settings['debugger']['debugger_port_list']) if debugger_enabled else 0
 
             for i, port_name in enumerate(settings['debugger']['debugger_port_list']):
                 watch = model.WATCH(name=f"watch_seg{index}_{port_name}", inames=[f"watch_seg{index}_{port_name}"])
                 model.connect(arterial_elements['SS'][str(index)][output_ports + i], watch)
-        
+
         if index == 1: # Skip the first segment as it's already connected
             pass
 
@@ -226,7 +220,7 @@ def connect_segments(model, arterial_elements, model_params, settings):
                 print(f"Segment {index} has no connections.")
                 # Plugging Fo with outflow plug
                 model.connect(fo_plug, arterial_elements['SS'][str(index)][1])
-                
+
             case [a, *rest]:
                 if not rest: ## ONE CONNECTION -------------------------------------------------------------------
                     print(f"Segment {index} has one connection to segment {a}, now connecting.")
