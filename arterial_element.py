@@ -85,21 +85,30 @@ class ArterialElement():
 
         self.arterial_element.connect(inp[0],  sum_f[0])   # inp Pi -> sum_f[0]
         self.arterial_element.connect(k_invc,  sum_f[1])   # - Po
-        self.arterial_element.connect(k_rs,    sum_f[2])   # - Rs*Fi
+
 
         self.arterial_element.connect(sum_f, int_fi)       # Pi + (- Po) + (- Rs*Fi) -> ∫()
 
 
+        # Initialize clip_fi as None for non-segment-1 elements
+        clip_fi = None
+        
         if self.index == 1: # clipping Fi output for 1st segment to mimic aortic valve behavior
-            clip = self.arterial_element.CLIP(max= 0, name=f'Clip -Rs*Fi {self.index}')
-            self.arterial_element.connect(int_fi, clip)
-            self.arterial_element.connect(clip, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
-            self.arterial_element.connect(k_invl, sum_p[0], k_rs)  # -Fi -> -Rs*Fi & sum_p[0] for next calculations
+            # Ensure Fi (integrator output) never goes below zero: if int_fi <= 0 then int_fi = 0
+            clip_fi = self.arterial_element.CLIP(max=0.0, name='clip_fi')  # Clip at 0.0 to mimic aortic valve behavior
+            self.arterial_element.connect(int_fi, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
+            self.arterial_element.connect(k_invl, clip_fi)
+
+            # -Fi -> -Rs*Fi & sum_p[0] for next calculations
+            self.arterial_element.connect(clip_fi, sum_p[0], k_rs)  # -Fi -> -Rs*Fi & sum_p[0] for next calculations
+            self.arterial_element.connect(k_rs,    sum_f[2])   # - Rs*Fi
+            
         else: # normal behavior for all other segments
             self.arterial_element.connect(int_fi, k_invl)      # ∫(Pi + (- Po) + (- Rs*Fi)) -> 1/L * ∫(Pi + (- Po) + (- Rs*Fi))
             self.arterial_element.connect(k_invl, k_rs, outp[1])
             self.arterial_element.connect(k_invl, sum_p[0])    # Fi
-        
+            self.arterial_element.connect(k_rs,    sum_f[2])   # - Rs*Fi
+
         self.arterial_element.connect(inp[1],  sum_p[1])    # - Fo
 
         self.arterial_element.connect(sum_p, int_po)       # Fi + (- Fo) + (- Po/Rp) -> ∫()
@@ -114,8 +123,8 @@ class ArterialElement():
             'Pi': inp[0],
             'Fo': inp[1],
             '-Rs*Fi': k_rs,
-            '-Fi': k_invl,
-            '-Po': k_invc,
+            '-Fi': k_invl if self.index != 1 else clip_fi,
+            '-Po': k_invl,
             'int_fi': int_fi,
             'int_po': int_po
             }
@@ -142,9 +151,9 @@ def arterial_elements_from_params(sim: bdsim.BDSim, model_params, settings):
     # Create arterial elements based on model parameters
     for art_seg in model_params['rows']:
         name, index, rs, l, c, rp, _ , _ = art_seg
-        rs *= 1e-3  # Convert Rs from dyn·s/cm^5 to mmHg·s/ml
-        l  *= 1e-3  # Convert L from dyn·s^2
-        c  *= 1e-3   # Convert C from ml/dyn to ml/mmHg
+        rs *= 1e-3  # Convert Rs to mm
+        l  *= 1e-3  # Convert L to mm
+        c  *= 1e-3   # Convert C to mm
 
         if rp is None:
             cls_art = ArterialElement(sim, rs, l, c, index, settings)
@@ -207,8 +216,6 @@ def connect_segments(model, arterial_elements, model_params, settings):
             print(f"Debugging enabled for segment {index}, connecting ports to dataports.")
             output_ports = 2 if index != 1 else 1  # Fi is clipped for the 1st segment to mimic aortic valve behavior
 
-            debugger_ports = len(settings['debugger']['debugger_port_list']) if debugger_enabled else 0
-
             for i, port_name in enumerate(settings['debugger']['debugger_port_list']):
                 watch = model.WATCH(name=f"watch_seg{index}_{port_name}", inames=[f"watch_seg{index}_{port_name}"])
                 model.connect(arterial_elements['SS'][str(index)][output_ports + i], watch)
@@ -246,7 +253,7 @@ def connect_segments(model, arterial_elements, model_params, settings):
 
                         # Connect Fi of connected segment to sum block
                         sumb[i] = -1 * arterial_elements['SS'][str(conn)][1]
-                        # model.connect(arterial_elements['SS'][str(conn)][1], sumb[i]) 
+                        # model.connect(arterial_elements['SS'][str(conn)][1], sumb[i])
                         print(f"Connected segment {index} to {conn} with sum block of {n} inputs.")
 
                     # Connect Fi of combined segments back into Fo of current segment

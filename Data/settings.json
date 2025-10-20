@@ -1,18 +1,18 @@
 {
     "debugger": {
         "enabled": true,
-        "debug_for_index": [1, 4, 10], 
-        "debugger_port_list": ["Pi", "Fo", "-Rs*Fi", "-Fi", "-Po", "int_fi", "int_po"]
+        "debug_for_index": [1,3,5,7,9,11,13], 
+        "debugger_port_list": ["Pi", "Fo", "-Rs*Fi", "-Fi", "-Po"]
     },
     "simulation": {
-        "simulation_time": 10,
+        "simulation_time": 7.5,
         "time_step": 0.008,
         "block": false,
         "report": true
     },
 
     "input_signal": {
-        "frequency": 2.5,
+        "frequency": 0.5,
         "amplitude": 40,
         "baseline": 80
     },

@@ -27,10 +27,13 @@ from filer import loader, load_latest_simulation_output, build_debug_db
 #load settings file
 settings, _ = loader()
 
-# Load the most recent simulation output
-data, last_file = load_latest_simulation_output(pattern='simulation_output_*.pkl')
-print(f'Loaded data from {last_file}')
+db, lastfile = load_latest_simulation_output(pattern='db_simulation_output_*.pkl')
 
-# Build and save the debugger DB using the loaded data/settings
-db, out_path = build_debug_db(data, settings, last_file, save=False)
+debugger_port_list = ["Pi"]
+
+for port in debugger_port_list:
+    fig, ax = plot_all_segments(db, port)
+    ax.set_title(f"{port} for all SS segments")
+
+plt.show()
 

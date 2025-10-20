@@ -23,7 +23,7 @@ def loader():
         model_params = json.load(file)
     return settings, model_params
 
-def saver(out):
+def saver(out, settings):
     """
     Save simulation output to a pickle file with an incremented filename.
     The filename format is 'simulation_output_XXX.pkl', where XXX is a zero-padded integer.
@@ -34,6 +34,9 @@ def saver(out):
 
     with open(f'Output\simulation_output_{i:03d}.pkl', 'wb') as f:
         pickle.dump(out, f)
+
+    with open(f'Output\settings_simulation_{i:03d}.pkl', 'wb') as f:
+        pickle.dump(settings, f)
 
     print(f"Simulation complete and output saved to 'simulation_output_{i:03d}.pkl'.")
 
