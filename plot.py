@@ -92,7 +92,7 @@ with open(r'Output/db_simulation_output_006.pkl', 'rb') as fh:
 
 with open(r'Output/db_simulation_output_014.pkl', 'rb') as fh:
     db1 = pickle.load(fh)
-debugger_port_list = ["Pi","int_fi"]
+debugger_port_list = ["-Po","-Fi"]
 ss_keys = ['SS1', 'SS5', 'SS9','SS13']
 for port in debugger_port_list:
     fig, ax = plot_all_segments(db1, port, ss_keys=ss_keys)
@@ -100,7 +100,7 @@ for port in debugger_port_list:
 
 with open(r'Output/db_simulation_output_015.pkl', 'rb') as fh:
     db2 = pickle.load(fh)
-debugger_port_list = ["Pi","int_fi"]
+debugger_port_list = ["-Po","-Fi"]
 ss_keys = ['SS1', 'SS5', 'SS9','SS13']
 for port in debugger_port_list:
     fig1, ax1 = plot_all_segments(db2, port, ss_keys=ss_keys)
@@ -108,7 +108,7 @@ for port in debugger_port_list:
 
 with open(r'Output/db_simulation_output_016.pkl', 'rb') as fh:
     db3 = pickle.load(fh)
-debugger_port_list = ["Pi","int_fi"]
+debugger_port_list = ["-Po","-Fi"]
 ss_keys = ['SS1', 'SS5', 'SS9','SS13']
 for port in debugger_port_list:
     fig2, ax2 = plot_all_segments(db3, port, ss_keys=ss_keys)

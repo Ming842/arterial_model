@@ -7,7 +7,7 @@
     "simulation": {
         "simulation_time": 7.5,
         "time_step": 0.008,
-        "block": false,
+        "block": true,
         "report": true
     },
 

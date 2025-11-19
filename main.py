@@ -5,7 +5,7 @@ Connects arterial elements based on configuration from a JSON file.
 """
 
 import bdsim
-
+import re
 from arterial_element import arterial_elements_from_params, to_subsystem, connect_segments
 from filer import loader, saver, load_latest_simulation_output, build_debug_db
 import numpy as np
@@ -23,15 +23,15 @@ def main():
     data1, last_file1 = load_latest_simulation_output(pattern='simulation_output_*.pkl')
     db1 = build_debug_db(data1, settings, last_file1, save=True)
 
-    settings['input_signal']['frequency'] = 0.4  # Change frequency to 0.5 Hz
-    init_and_run(settings, model_params, sim)
-    data2, last_file2 = load_latest_simulation_output(pattern='simulation_output_*.pkl')
-    db2 = build_debug_db(data2, settings, last_file2, save=True)
+    # settings['input_signal']['frequency'] = 0.4  # Change frequency to 0.5 Hz
+    # init_and_run(settings, model_params, sim)
+    # data2, last_file2 = load_latest_simulation_output(pattern='simulation_output_*.pkl')
+    # db2 = build_debug_db(data2, settings, last_file2, save=True)
     
-    settings['input_signal']['frequency'] = 0.20  # Change frequency to 0.5 Hz
-    init_and_run(settings, model_params, sim)
-    data3, last_file3 = load_latest_simulation_output(pattern='simulation_output_*.pkl')
-    db3 = build_debug_db(data3, settings, last_file3, save=True)
+    # settings['input_signal']['frequency'] = 0.20  # Change frequency to 0.5 Hz
+    # init_and_run(settings, model_params, sim)
+    # data3, last_file3 = load_latest_simulation_output(pattern='simulation_output_*.pkl')
+    # db3 = build_debug_db(data3, settings, last_file3, save=True)
     
 
 def init_and_run(settings, model_params, sim):
